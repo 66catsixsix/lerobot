@@ -1,0 +1,37 @@
+{
+  "editor.quickSuggestions": {
+    "comments": "off",
+    "strings": "off",
+    "other": "on"
+  },
+  "editor.suggestOnTriggerCharacters": true,
+  "editor.acceptSuggestionOnCommitCharacter": true,
+  "editor.acceptSuggestionOnEnter": "on",
+  "editor.inlineSuggest.enabled": false,
+  "editor.suggest.preview": false,
+  "editor.parameterHints.enabled": true,
+  "editor.snippetSuggestions": "inline",
+  "editor.tabCompletion": "on",
+  "editor.wordBasedSuggestions": "matchingDocuments",
+  "C_Cpp.autocomplete": "Default",
+  "C_Cpp.intelliSenseEngine": "default",
+  "trae.tab.cue": false,
+  "trae.enableInlineCommand": false,
+  "trae.tab.enableTabKeyboardShortcuts": false,
+  "trae.tab.enableRename": false,
+  "trae.tab.enablePartialAccept": false,
+  "trae.tab.enableAutoImport": false,
+  "trae.enableCodelens": {
+    "enableInlineDocumentation": false,
+    "enableInlineExplain": false
+  },
+  "github.copilot.editor.enableAutoCompletions": false,
+  "github.copilot.nextEditSuggestions.enabled": false,
+  "github.copilot.enable": {
+    "*": false,
+    "plaintext": false,
+    "markdown": false,
+    "scminput": false
+  },
+  "C_Cpp_Runner.msvcBatchPath": ""
+}
