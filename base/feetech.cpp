@@ -43,8 +43,6 @@ bool Feetech::move(int id,int position)
     packet[7] = posHigh;
     packet[8] = checknum;
 
- 
-
     std::cout << "舵机ID:" << (int)packet[2] << std::endl;
     std::cout << "长度:" << (int)packet[3] << std::endl;
     std::cout << "指令:" << (int)packet[4] << std::endl;
@@ -89,3 +87,12 @@ bool Feetech :: Feetech_torque(int id,bool status)
     return status_scan == 8;
 
 } 
+
+bool Feetech::Feetech_ReadPos(int id)
+{
+
+
+
+
+
+}
