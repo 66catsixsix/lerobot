@@ -10,7 +10,7 @@
 
 bool LinuxSerial::openPort(const std::string& device, int baudrate)
 {
-    fd_ = open(device.c_str(),O_RDWR | O_NOCTTY | O_NDELAY);
+    fd_ = open(device.c_str(),O_RDWR | O_NOCTTY);
 
     if(fd_ < 0)
     {
@@ -52,13 +52,19 @@ bool LinuxSerial::openPort(const std::string& device, int baudrate)
         option.c_cflag |= CS8;
         option.c_cflag &= ~CRTSCTS;
 
+        option.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG);
+        option.c_iflag &= ~(IXON | IXOFF | IXANY);
+        option.c_oflag &= ~OPOST;
+
+        option.c_cc[VMIN] = 0;
+        option.c_cc[VTIME] = 1;
+        tcflush(fd_, TCIOFLUSH);
         if(tcsetattr(fd_,TCSANOW,&option) != 0)
         {
             close(fd_);
             return false;
         }
         
-
         return true;
 
 }  

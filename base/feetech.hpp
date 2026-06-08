@@ -7,6 +7,7 @@ public:
     bool Feetech_Begin(const std::string &device,int baudrate);
     bool Feetech_torque(int id,bool status);
     bool Feetech_ReadPos(int id);
+    int Feetech_ReadTorque_status(int id);
     void scan();
     
 

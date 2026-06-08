@@ -33,5 +33,18 @@
     "markdown": false,
     "scminput": false
   },
-  "C_Cpp_Runner.msvcBatchPath": ""
+  "C_Cpp_Runner.msvcBatchPath": "",
+  "files.associations": {
+    "*.qml": "qml"
+  },
+  "qt-core.qtInstallationRoot": "/opt/homebrew",
+  "qt-qml.qmlls.enabled": true,
+  "qt-qml.qmlls.customExePath": "/opt/homebrew/bin/qmlls",
+  "qt-qml.qmlls.customArgs": [
+    "--build-dir",
+    "/Users/tot/Documents/lerobot/build"
+  ],
+  "qt-qml.qmlls.additionalImportPaths": [
+    "/opt/homebrew/share/qt/qml"
+  ]
 }
