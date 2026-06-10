@@ -1,19 +1,46 @@
 import QtQuick
 import QtQuick.Controls
+import LeRobot 1.0
+
 
 ApplicationWindow {
     visible: true
     width: 800
     height: 600
     title: "LeRobot QML"
+    property bool connected: false
+    property bool started: false
+    property string mode: "home"
+    RobotBackend{
+        id:robot;
+    }
+
+    Column{
+        visible: mode === "home"
+        anchors.centerIn: parent
+        spacing:16
+
+        Text{
+            text: "Lerobot Control"
+            font.pixelSize:28
+        }
+        Button{
+            text:"Manual Control"
+            onClicked: mode = "manual"
+        }
+        Button{
+            text:"Auto Learn"
+            onClicked:mode = "learn"
+        }
+    }
 
     Column{
         anchors.centerIn:parent;
         spacing:12
-
+        visible:mode === "manual"
         Text{
             text:"Lerobot Servo Control"
-            font.pixelSize:24
+            font.pixelSize:50
         }
         TextField{
             id:portInput
@@ -26,6 +53,10 @@ ApplicationWindow {
             width:220
             text:"1"
             placeholderText:"Servo ID"
+            validator:IntValidator{
+                bottom:1
+                top:253
+            }
         }
         Slider{
             id:positionSlider
@@ -40,31 +71,40 @@ ApplicationWindow {
         }
         Row{
             spacing:10
-
             Button{
                 text:"Connect"
-                onClicked:statusText.text = robot.connectSerial(portInput.text, 1000000)
-            }
-            Button{
-                text:"Torque On"
-                onClicked:statusText.text = robot.setTorque(Number(idInput.text), true)
-            }
-            Button{
-                text:"Torque Off"
-                onClicked:statusText.text = robot.setTorque(Number(idInput.text), false)
-            }
-            Button{
-                text:"Move"
-                width:220
                 onClicked:{
-                    statusText.text = robot.moveServo(Number(idInput.text), Math.round(positionSlider.value))
+                    let result = robot.connectSerival(portInput.text,115200)
+                    statusText.text = result
+                    connected = (result === "UART OK")
+                }
+            }
+            Switch{
+                id:torqueSwitch
+                enabled: connected
+                text:checked ? "Torque ON" : "Torque OFF"
+                onClicked:{
+                    statusText.text = robot.setTorque(Number(idInput.text),torqueSwitch.checked)
                 }
             }
             Button{
-                text:"Read Position"
+                enabled:connected
+                text:"Move"
                 width:220
-                onClicked:statusText.text = robot.readPosition(Number(idInput.text))
+                onClicked:{
+                    statusText.text = robot.moveServo(Number(idInput.text),Math.round(positionSlider.value))
+                }
             }
+            Button{
+                enabled:connected
+                text:"Read"
+                width:220
+                onClicked:{
+                    statusText.text = robot.ReadPos(Number(idInput.text))
+                }
+
+            }
+        }
             Text{
                 id:statusText
                 text:"Ready"
@@ -72,5 +112,62 @@ ApplicationWindow {
             }
         }
 
+        Column
+        {
+            visible:mode === "learn"
+            anchors.centerIn: parent
+            spacing:12
+
+            Text{
+                text:"Auto Learn"
+                font.pixelSize:50
+            }
+            Button{
+                text:"Start Learn"
+                onClicked:{
+                    let result = robot.startLearn()
+                    learnStatusText.text = result
+                    started = (result === "Auto learn started")
+                }
+            }
+            Button{
+                enabled:started
+                text:"Stop Learn"
+                onClicked:{
+                    learnStatusText.text = robot.stopLearn();
+                }
+            }
+            Text{
+                id:learnStatusText
+                text:"Status:"
+                font.pixelSize:30
+            }
+        }
+        Item{
+            visible:mode === "learn"
+            anchors.fill: parent
+            Button{
+                text:"Back"
+                anchors.left:parent.left
+                anchors.top:parent.top
+                anchors.margins:16
+                onClicked: mode = "home"
+            }
+        }
+
+        Item{
+            visible:mode === "manual"
+            anchors.fill: parent
+            Button{
+            text:"Back"
+            anchors.left:parent.left
+            anchors.top:parent.top
+            anchors.leftMargin: 16
+            anchors.topMargin: 16
+            onClicked: mode = "home"
+        }
+
+        }
+
     }
-}
+

@@ -61,7 +61,6 @@ bool Feetech::move(int id,int position)
 
 bool Feetech :: Feetech_torque(int id,bool status)
 {
-
     int length = 0x04;
     int instruction = 0x03;
     int torque = 0x28;
@@ -87,7 +86,7 @@ bool Feetech :: Feetech_torque(int id,bool status)
 
 } 
 
-bool Feetech::Feetech_ReadPos(int id)
+int Feetech::Feetech_ReadPos(int id)
 {
     int length = 0x04;
     int instruction = 0x02;
@@ -119,6 +118,7 @@ bool Feetech::Feetech_ReadPos(int id)
         int position = (rx[5])+(rx[6]<<8);
         std::cout << "舵机ID:" << id << std::endl;
         std::cout << std::dec <<  "位置:" << position << std::endl;
+        return position;
 
     }else if(get_rx == 0)
     {
@@ -133,7 +133,7 @@ bool Feetech::Feetech_ReadPos(int id)
         std::cout << "接收信息错误" << std::endl;
         return 0;
     }
-    return read_re == 8;
+    return -1;
 
 }
 

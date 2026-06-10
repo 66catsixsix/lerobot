@@ -1,20 +1,14 @@
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
-#include <QQmlContext>
 #include <QUrl>
 #include <QString>
-
 #include "robot_backend.hpp"
 
 int main(int argc, char *argv[])
 {
     QGuiApplication app(argc, argv);
-
+    qmlRegisterType<RobotBackend>("LeRobot",1,0,"RobotBackend");
     QQmlApplicationEngine engine;
-    RobotBackend robot;
-
-    engine.rootContext()->setContextProperty("robot", &robot);
-
     engine.load(QUrl::fromLocalFile(QStringLiteral(SOURCE_DIR "/qml/Main.qml")));
 
     if (engine.rootObjects().isEmpty()) {
