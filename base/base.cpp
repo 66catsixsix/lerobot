@@ -3,6 +3,7 @@
 #include "serial.hpp"
 #include <cstring>
 #include "feetech.hpp"
+#include "SMS_STS.h"
 
 Feetech servo;
 
@@ -16,7 +17,7 @@ int main(int argc,char* argv[]){
         std::cout << "参数错误：参数不足" << std::endl;
         return 0;
     }
-    bool ef = servo.Feetech_Begin("/dev/ttyACM0",1000000); //RK
+    bool ef = servo.Feetech_Begin("/dev/ttyACM1",1000000); //RK
     //bool ef = servo.Feetech_Begin("/dev/ttys003",115200);
     std::cout << std::boolalpha;
     if(ef)
@@ -117,6 +118,17 @@ int main(int argc,char* argv[]){
         std::cout << "参数填写错误，请重新输入" << std::endl;
     }
     
+
+    if (cmd == "officialread") {
+    SMS_STS st;
+    st.begin(1000000, "/dev/ttyACM1");
+
+    int id = std::stoi(argv[2]);
+    int pos = st.ReadPos(id);
+
+    std::cout << "official pos: " << pos << std::endl;
+    return 0;
+}
   
 
 

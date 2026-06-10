@@ -6,6 +6,7 @@
 #include <fcntl.h>      // open, O_RDWR, O_NOCTTY, O_NDELAY
 #include <termios.h>    // termios, tcgetattr, tcsetattr, baudrate
 #include <cstring>  
+#include <iomanip>
 
 bool Feetech :: Feetech_Begin(const std::string &device,int baudrate){
 
@@ -102,38 +103,94 @@ int Feetech::Feetech_ReadPos(int id)
     packet[7] = checknum; 
 
     int read_re = serial.send(packet,8);
-    if (read_re != 8)return false;
+    if (read_re != 8)return -1;
 
-    uint8_t rx[16];
-    int get_rx = serial.readBytes(rx,sizeof(rx),100);
-    if(get_rx > 0)
-    {   
-        std::cout << "Packet:" << get_rx << std::endl;
-        std::cout << "RX bytes:";
-        for(int i = 0;i < get_rx;i++)
-        {
-            std::cout << std::hex << (int)rx[i];
-        }
-        std::cout << std::endl;
-        int position = (rx[5])+(rx[6]<<8);
-        std::cout << "舵机ID:" << id << std::endl;
-        std::cout << std::dec <<  "位置:" << position << std::endl;
-        return position;
+    // uint8_t rx[16];
+    // int get_rx = serial.readBytes(rx,sizeof(rx),100);
+    // if(get_rx > 0)
+    // {   
+    //     std::cout << "Packet:" << get_rx << std::endl;
+    //     std::cout << "RX bytes:";
+    //     for(int i = 0;i < get_rx;i++)
+    //     {
+    //         //std::cout << std::hex << (int)rx[i];
+    //         std::cout << std::hex << (int)rx[i] << " ";
+    //     }
+    //     std::cout << std::dec << std::endl;
+    //     int position = (rx[5])+(rx[6]<<8);
+    //     std::cout << "舵机ID:" << id << std::endl;
+    //     std::cout << std::dec <<  "位置:" << position << std::endl;
+    //     return position;
 
-    }else if(get_rx == 0)
-    {
-        std::cout << "空包" << std::endl;
-    }else if(get_rx != 8)
-    {
-        std::cout << "包长度错误" << std::endl;
-        return 0;
-    }
-    else
-    {
-        std::cout << "接收信息错误" << std::endl;
-        return 0;
-    }
-    return -1;
+    // if(get_rx == 0)
+    // {
+    //     std::cout << "空包" << std::endl;
+    // }else if(get_rx != 8)
+    // {
+    //     std::cout << "包长度错误" << std::endl;
+    //     return 0;
+    // }
+    // else
+    // {
+    //     std::cout << "接收信息错误" << std::endl;
+    //     return 0;
+    // }
+    // return -1;
+
+           uint8_t rx[8];
+           int total = 0;
+
+           while (total < 8)
+           {
+            int n = serial.readBytes(rx + total,8 - total,100);
+
+            if(n<=0){
+                break;
+            }
+            total += n;
+
+           }
+           
+           if(total != 8)
+           {
+            std::cout << "包长度错误:" << total <<std::endl;
+            return -1;
+           }
+           if(rx[0] != 0xFF || rx[1] != 0xFF)
+           {
+            std::cout << "包头错误" << std::endl;
+            return -1;
+           }
+           if(rx[2] != id)
+           {
+            std::cout << "ID错误" <<std::endl;
+            return -1;
+           }
+           if(rx[3] != 0x04)
+           {
+            std::cout << "长度字段错误" << std::endl;
+            return -1;
+           }
+           if(rx[4] != 0x00)
+           {
+            std::cout << "返回错误码:" << (int)rx[4] << std::endl;
+            return -1;
+           }
+           
+           uint8_t checksum = ~(rx[2] + rx[3] + rx[4] + rx[5] + rx[6]);
+           if(checksum != rx[7])
+           {
+            std::cout << "校验和错误" << std::endl;
+            return -1;
+           }
+
+           int position = rx[5] + (rx[6] << 8);
+           std::cout << "舵机ID:" << id << std::endl;
+           std::cout << "位置:" << position <<std::endl;
+
+           return position;
+
+    
 
 }
 
@@ -175,3 +232,27 @@ int Feetech::Feetech_ReadTorque_status(int id)
     }
 
 }
+
+bool Feetech::Feetech_Safe_Move(int id,int position)
+{   
+    switch (id)
+    {
+    case 1: 
+        if(position<ID1_hard_min || position > ID1_hard_max)
+        {
+            std::cout << "位置超过安全限制,请关闭电源!" << std::endl;
+            return false;
+        }
+            return move(id,position);
+
+    case 2:
+            return move(id,position);
+
+    default:
+            return false;
+            
+    }
+
+ 
+}
+

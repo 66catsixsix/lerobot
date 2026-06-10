@@ -42,7 +42,7 @@ QString RobotBackend::moveServo(int id,int position)
     {
         return "串口未连接";
     }
-    bool ok = servo_.move(id,position);
+    bool ok = servo_.Feetech_Safe_Move(id,position);
 
     if(ok)
     {

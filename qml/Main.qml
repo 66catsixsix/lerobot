@@ -11,6 +11,7 @@ ApplicationWindow {
     property bool connected: false
     property bool started: false
     property string mode: "home"
+    property bool realtimeRead: false
     RobotBackend{
         id:robot;
     }
@@ -74,7 +75,7 @@ ApplicationWindow {
             Button{
                 text:"Connect"
                 onClicked:{
-                    let result = robot.connectSerival(portInput.text,115200)
+                    let result = robot.connectSerival(portInput.text,1000000)
                     statusText.text = result
                     connected = (result === "UART OK")
                 }
@@ -142,7 +143,15 @@ ApplicationWindow {
                 text:"Status:"
                 font.pixelSize:30
             }
+            Button{
+                width:100
+                text:"Check Pos"
+                onClicked:{
+                    mode = "check"
+                }
+            }
         }
+        //返回
         Item{
             visible:mode === "learn"
             anchors.fill: parent
@@ -166,8 +175,61 @@ ApplicationWindow {
             anchors.topMargin: 16
             onClicked: mode = "home"
         }
-
         }
+        Item{
+            visible:mode === "check"
+            anchors.fill: parent
+            Button{
+            text:"Back"
+            anchors.left:parent.left
+            anchors.top:parent.top
+            anchors.leftMargin: 16
+            anchors.topMargin: 16
+            onClicked: mode = "learn"
+        }
+        }
+
+        Item{
+            visible:mode === "check"
+            Timer{
+                interval:1
+                running:mode === "check" && connected
+                repeat:true
+                onTriggered:{
+                    pos1Text.text = robot.ReadPos(1)
+                    pos2Text.text = robot.ReadPos(2)
+                    pos3Text.text = robot.ReadPos(3)
+                    pos4Text.text = robot.ReadPos(4)
+                    pos5Text.text = robot.ReadPos(5)
+                    pos6Text.text = robot.ReadPos(6)
+                }
+            }
+            
+            anchors.fill: parent
+            Text{
+                id:checkpos
+                text:"Check Pos"
+                font.pixelSize:50
+                anchors.top:parent.top
+                anchors.horizontalCenter:parent.horizontalCenter
+                anchors.topMargin:20
+            }
+            Column{    
+            id:posColumn
+            anchors.left:parent.left
+            anchors.top:parent.top
+            anchors.leftMargin:150
+            anchors.topMargin:140
+            spacing:8
+            Text { id: pos1Text; text: "ID1: --";font.pixelSize:30 }
+            Text { id: pos2Text; text: "ID2: --";font.pixelSize:30 }
+            Text { id: pos3Text; text: "ID3: --";font.pixelSize:30 }
+            Text { id: pos4Text; text: "ID4: --";font.pixelSize:30 }
+            Text { id: pos5Text; text: "ID5: --";font.pixelSize:30 }
+            Text { id: pos6Text; text: "ID6: --";font.pixelSize:30 }
+
+            }
+            }
 
     }
 
