@@ -16,6 +16,7 @@ public:
     Q_INVOKABLE QString ReadPos(int id);
     Q_INVOKABLE QString startLearn();
     Q_INVOKABLE QString stopLearn();
+    
 private:
     Feetech servo_;
     bool connected_ = false;

@@ -53,7 +53,7 @@ bool LinuxSerial::openPort(const std::string& device, int baudrate)
         option.c_cflag &= ~CRTSCTS;
 
         option.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG);
-        option.c_iflag &= ~(IXON | IXOFF | IXANY);
+        option.c_iflag &= ~(IXON | IXOFF | IXANY | ICRNL | INLCR | IGNCR);
         option.c_oflag &= ~OPOST;
 
         option.c_cc[VMIN] = 0;
@@ -77,4 +77,9 @@ int LinuxSerial::send(const uint8_t* data, size_t length)
 int LinuxSerial::readBytes(uint8_t* buffer, size_t length, int timeoutMS)
 {
     return read(fd_,buffer,length);
+}
+
+void LinuxSerial::flushInput()
+{
+    tcflush(fd_,TCIFLUSH);   //清楚舵机未处理的返回包
 }

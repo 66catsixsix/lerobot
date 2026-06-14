@@ -7,6 +7,7 @@
 #include <termios.h>    // termios, tcgetattr, tcsetattr, baudrate
 #include <cstring>  
 #include <iomanip>
+#include <algorithm>
 
 bool Feetech :: Feetech_Begin(const std::string &device,int baudrate){
 
@@ -87,6 +88,24 @@ bool Feetech :: Feetech_torque(int id,bool status)
 
 } 
 
+bool Feetech::Feetech_torque_off()
+{
+    Feetech_torque(1,0);
+    usleep(300000);
+    Feetech_torque(2,0);
+    usleep(300000);
+    Feetech_torque(3,0);
+    usleep(300000);
+    Feetech_torque(4,0);
+    usleep(300000);
+    Feetech_torque(5,0);
+    usleep(300000);
+    Feetech_torque(6,0);
+    usleep(300000);
+    std::cout << "扭矩已经全部关闭" << std::endl;
+    return 0;
+}
+
 int Feetech::Feetech_ReadPos(int id)
 {
     int length = 0x04;
@@ -101,7 +120,7 @@ int Feetech::Feetech_ReadPos(int id)
     packet[5] = 0x38;
     packet[6] = 0x02;
     packet[7] = checknum; 
-
+    serial.flushInput();
     int read_re = serial.send(packet,8);
     if (read_re != 8)return -1;
 
@@ -180,6 +199,15 @@ int Feetech::Feetech_ReadPos(int id)
            uint8_t checksum = ~(rx[2] + rx[3] + rx[4] + rx[5] + rx[6]);
            if(checksum != rx[7])
            {
+            std::cout << int(rx[0]) << std::endl;
+            std::cout << int(rx[1]) << std::endl;
+            std::cout << int(rx[2]) << std::endl;
+            std::cout << int(rx[3]) << std::endl;
+            std::cout << int(rx[4]) << std::endl;
+            std::cout << int(rx[5]) << std::endl;
+            std::cout << int(rx[6]) << std::endl;
+            std::cout << int(rx[7]) << std::endl;
+            
             std::cout << "校验和错误" << std::endl;
             return -1;
            }
@@ -189,10 +217,7 @@ int Feetech::Feetech_ReadPos(int id)
            std::cout << "位置:" << position <<std::endl;
 
            return position;
-
-    
-
-}
+        }
 
 int Feetech::Feetech_ReadTorque_status(int id)
 {
@@ -246,13 +271,122 @@ bool Feetech::Feetech_Safe_Move(int id,int position)
             return move(id,position);
 
     case 2:
+        if(position<ID2_hard_min || position > ID2_hard_max)
+        {
+            std::cout << "位置超过安全限制,请关闭电源!" << std::endl;
+            return false;
+        }
+            return move(id,position);
+    
+    case 3:
+        if(position<ID3_hard_max || position > ID3_home)
+        {
+            std::cout << "位置超过安全限制,请关闭电源!" << std::endl;
+            return false;
+        }
+            return move(id,position);
+    
+    case 4:
+        if(position<ID4_hard_min || position > ID4_hard_max)
+        {
+            std::cout << "位置超过安全限制,请关闭电源!" << std::endl;
+            return false;
+        }
+            return move(id,position);
+    
+    case 5:
+        if(position<ID5_hard_min || position > ID5_hard_max)
+        {
+            std::cout << "位置超过安全限制,请关闭电源!" << std::endl;
+            return false;
+        }
+            return move(id,position);
+    
+    case 6:
+        if(position<ID6_hard_min || position > ID6_hard_max)
+        {
+            std::cout << "位置超过安全限制,请关闭电源!" << std::endl;
+            return false;
+        }
             return move(id,position);
 
     default:
             return false;
             
-    }
-
- 
+    } 
 }
 
+bool Feetech::Feetech_home(int id)
+{
+    switch (id)
+    {
+    case 1:
+        return move(id,ID1_home);
+    case 2:
+        return move(id,ID2_home);
+    case 3:
+        return move(id,ID3_home);
+    case 4:
+        return move(id,ID4_home);
+    case 5:
+        return move(id,ID5_home);
+    case 6:
+        return move(id,ID6_home);
+
+    default:
+        return false;
+    }
+}
+
+bool Feetech::Feetech_Move_Speed(int id,int position,int speed,int acc)
+{
+    int length = 0x0A;
+    int instruction = 0x03;
+    int addr = 0x29;
+    uint8_t ACC = acc & 0xFF;
+    uint8_t POS_Low = position & 0xFF;
+    uint8_t POS_High = (position >> 8) & 0xFF;
+    int TIME_Low = 0x00;
+    int TIME_High = 0x00;
+    uint8_t SPEED_Low = speed & 0xFF;
+    uint8_t SPEED_High = (speed >> 8) & 0xFF;
+    uint8_t checksum = ~(id + length + instruction + addr + ACC + POS_Low + POS_High + 0 + 0 + SPEED_Low + SPEED_High);
+    uint8_t packet[14];
+    packet[0] = 0xFF;
+    packet[1] = 0xFF;
+    packet[2] = id;
+    packet[3] = length;
+    packet[4] = instruction;
+    packet[5] = addr;
+    packet[6] = ACC;
+    packet[7] = POS_Low;
+    packet[8] = POS_High;
+    packet[9] = TIME_Low;
+    packet[10] = TIME_High;
+    packet[11] = SPEED_Low;
+    packet[12] = SPEED_High;
+    packet[13] = checksum;
+
+    int written = serial.send(packet,14);
+    return written == 14;
+}
+
+//自动学习使用
+bool Feetech::Feetech_Safe_Move_Speed(int id,int position,int speed,int acc)
+{   
+    speed = std::clamp(speed,0,3400);
+    acc = std::clamp(acc,0,254);
+    
+    //id3 1100和3050 
+    std::array<int,7> hard_min = {0,800,1000,1100,1000,350,1300};
+    std::array<int,7> hard_max = {0,3200,3000,3050,2700,3750,2400};
+    
+
+    if(id < 1 || id > 6){std::cout << "ID有误!" << std::endl;return false;}
+    if(position < hard_min[id] || position > hard_max[id]){std::cout << "位置超出安全限制" << std::endl; return false;}
+
+    return Feetech_Move_Speed(id,position,speed,acc);
+
+    
+
+}

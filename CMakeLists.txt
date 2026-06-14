@@ -22,6 +22,7 @@ add_executable(robot_base
     base/base.cpp
     base/serial.cpp
     base/feetech.cpp
+    base/learner.cpp
 )
 
 target_link_libraries(robot_base PRIVATE
@@ -38,6 +39,7 @@ add_executable(robot_gui
     qml/robot_backend.cpp
     base/serial.cpp
     base/feetech.cpp
+    base/learner.cpp
 )
 
 target_include_directories(robot_gui PRIVATE
