@@ -5,11 +5,23 @@
 #include "feetech.hpp"
 #include "SMS_STS.h"
 #include "learner.hpp"
+#include <csignal>
 
 Feetech servo;
 Learner learn(servo);
 
+void handleSignal(int signal)
+{
+    if(signal == SIGINT)
+    {
+        learn.requestStop();
+    }
+}
+
 int main(int argc,char* argv[]){
+
+    std::signal(SIGINT,handleSignal); //ctrl c
+
     if(argc == 1)
     {
         std::cout << "参数错误：参数不足" << std::endl;
@@ -254,6 +266,7 @@ int main(int argc,char* argv[]){
         std::string target = argv[2];
         if(target == "all")
         {
+            learn.resetStop();
             learn.Learner_All();
             return 0;
         }
@@ -266,9 +279,55 @@ int main(int argc,char* argv[]){
             std::cout << "ID解析错误,请检查输入" << std::endl;
             return false;
         }
+        learn.resetStop();
         learn.Low_Speed_Check(id);
   
     }
+    
+    //bug 电流
+    else if(cmd == "getelect" && argc == 3)
+    {
+        int id = 0;
+        try
+        {
+            id = std::stoi(argv[2]);
+
+        }catch(...)
+        {
+            std::cout << "ID解析错误" << std::endl;
+            return -1;
+        }
+        
+        int get_Elect = 0;
+        bool ok = servo.Feetech_get_Elect(id,get_Elect);
+        if(!ok)
+        {
+            std::cout << "电流异常，请检查" << std::endl;
+            return -1;
+        }
+        std::cout << "舵机电流为:" << get_Elect << std::endl;
+    }
+    //bug 
+
+    else if(cmd == "getstress" && argc == 3)
+    {
+        int id = 0;
+        int get_Stress = 0;
+        try{
+            id = std::stoi(argv[2]);
+        }
+        catch(...)
+        {
+            std::cout << "ID解析错误" << std::endl;
+        }
+        bool ok = servo.Feetech_get_Stress(id,get_Stress);
+        if(!ok)
+        {
+            std::cout << "负载获取失败，请检查" << std::endl;
+            return -1;
+        }
+    }
+ 
     
        
     else{

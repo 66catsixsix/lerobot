@@ -321,17 +321,17 @@ bool Feetech::Feetech_home(int id)
     switch (id)
     {
     case 1:
-        return move(id,ID1_home);
+        return Feetech_Move_Speed(id,ID1_home,1000,50);
     case 2:
-        return move(id,ID2_home);
+        return Feetech_Move_Speed(id,ID2_home,1000,50);
     case 3:
-        return move(id,ID3_home);
+        return Feetech_Move_Speed(id,ID3_home,1000,50);
     case 4:
-        return move(id,ID4_home);
+        return Feetech_Move_Speed(id,ID4_home,1000,50);
     case 5:
-        return move(id,ID5_home);
+        return Feetech_Move_Speed(id,ID5_home,1000,50);
     case 6:
-        return move(id,ID6_home);
+        return Feetech_Move_Speed(id,ID6_home,1000,50);
 
     default:
         return false;
@@ -371,7 +371,7 @@ bool Feetech::Feetech_Move_Speed(int id,int position,int speed,int acc)
     return written == 14;
 }
 
-//自动学习使用
+//
 bool Feetech::Feetech_Safe_Move_Speed(int id,int position,int speed,int acc)
 {   
     speed = std::clamp(speed,0,3400);
@@ -387,6 +387,176 @@ bool Feetech::Feetech_Safe_Move_Speed(int id,int position,int speed,int acc)
 
     return Feetech_Move_Speed(id,position,speed,acc);
 
-    
+}
 
+bool Feetech::Feetech_Soft_Stop(int id)
+{
+    int current = Feetech_ReadPos(id);
+
+    if(current < 0)
+    {
+        return false;
+    }
+    
+    return Feetech_Move_Speed(id,current,150,20);
+
+}
+
+bool Feetech::Feetech_get_Elect(int id,int& electric)
+{
+    int length = 0x04;
+    int instruction = 0x02;
+    uint8_t POS_Low_E = 0x45;
+    uint8_t addr = 0x02;
+    uint8_t checksum = ~(id+ length + instruction + POS_Low_E + addr);
+
+    uint8_t packet[8];
+    packet[0] = 0xFF;
+    packet[1] = 0xFF;
+    packet[2] = id;
+    packet[3] = length;
+    packet[4] = instruction;
+    packet[5] = POS_Low_E;      //todo   起始位置
+    packet[6] = addr;           //fixme  长度
+    packet[7] = checksum;
+    
+    serial.flushInput();
+    int written = serial.send(packet,8);
+    if(written != 8)
+    {
+        std::cout << "发送电流读取包失败" << std::endl;
+        return false;
+    }
+    //var. s aso
+    uint8_t rx[8];
+    int total = 0;
+
+    while (total < 8)
+    {   
+        int n = serial.readBytes(rx + total, 8 - total,100);
+    
+        if(n<=0)
+        {
+            break;
+        }
+        total += n;
+    }
+      if (total != 8)
+        {
+            std::cout << "包长度错误" << std::endl;
+            return false;
+        }
+        if(rx[0] != 0xFF || rx[1] != 0xFF)
+        {
+            std::cout << "包头错误" << std::endl;
+            return false;
+        }
+        if(rx[2] != id)
+        {
+            std::cout << "ID错误" << std::endl;
+            return false;
+        }
+        if(rx[3] != length)
+        {
+            std::cout << "包长度错误" << std::endl;
+            return false;
+        }
+        if(rx[4] != 0x00)
+        {
+            std::cout << "指令码错误:" << (int)rx[4] << std::endl;
+            return false;
+        }
+        uint8_t rxchecksum = ~(rx[2] + rx[3] + rx[4] + rx[5] + rx[6]);
+        if(rx[7] != rxchecksum)
+        {
+            std::cout << "校验和错误" << std::endl;
+            return false;
+        }
+        //15位方向
+        int raw = (int)rx[5] + ((int)rx[6] << 8);
+        //拿到正负清除15位 然后得到电流大小
+        electric = (raw & 0x8000)? -(raw & 0x7FFF) : raw;
+        std::cout << "舵机" << id << "电流为:" << electric << std::endl;
+        return true;
+
+}
+
+bool Feetech::Feetech_get_Stress(int id,int& stress)
+{
+    
+    uint8_t length = 0x04;
+    uint8_t instruction = 0x02;
+    uint8_t addr = 0x02;
+    uint8_t POS_Low_S = 0x3C;
+    uint8_t readLen = 0x02;
+    uint8_t checksum = ~(id + length + instruction + POS_Low_S + readLen);
+
+    uint8_t packet[8];
+    packet[0] = 0xFF;
+    packet[1] = 0xFF;
+    packet[2] = id;
+    packet[3] = length;
+    packet[4] = instruction;
+    packet[5] = POS_Low_S;
+    packet[6] = readLen;
+    packet[7] = checksum;
+    serial.flushInput();
+    int written = serial.send(packet,sizeof(packet));
+    if(written != 8)
+    {
+        std::cout << "负载包发送失败" << std::endl;
+        return false;
+    }
+
+
+    uint8_t rx[8];
+    int total = 0;
+
+    while(total < 8)
+    {
+        int get_stress = serial.readBytes(rx+total,8-total,100);
+        if(get_stress <= 0)
+        {
+            break;
+        }
+        total += get_stress;
+    }
+    if(total != 8)
+    {
+        std::cout << "包长度错误" << std::endl;
+        return false;
+    }
+    if(rx[0] != 0xFF || rx[1] != 0xFF)
+    {
+        std::cout << "包头错误" << std::endl;
+        return false;
+    }
+    if(rx[2] != id)
+    {
+        std::cout << "ID错误" << std::endl;
+        return false;
+    }
+    if(rx[3] != length)
+    {
+        std::cout << "包长度错误" << std::endl;
+        return false;
+    }
+    if(rx[4] != 0x00)
+    {
+        std::cout << "包指令错误" << std::endl;
+        return false;
+    }
+    uint8_t rxchecksum = ~(rx[2] + rx[3] + rx[4] + rx[5] + rx[6]);
+    if(rx[7] != rxchecksum)
+    {
+        std::cout << "校验和错误" << std::endl;
+        return false;
+    }
+
+    int raw = (int)rx[5] | (rx[6] << 8);
+
+    //blocker  如果0x400  相与十位结果不为0，就相0x7FFF的值，获得负载；
+    stress = (raw & 0x400) ? -(raw & 0x03FF) : (raw & 0x03FF);
+    std::cout << "舵机" << id << "的负载为:" << stress << std::endl;
+    return true;
 }

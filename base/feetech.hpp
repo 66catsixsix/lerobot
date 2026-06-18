@@ -12,6 +12,9 @@ public:
     bool Feetech_home(int id);
     bool Feetech_Move_Speed(int id,int position,int speed,int acc);
     bool Feetech_Safe_Move_Speed(int id, int position, int speed, int acc);
+    bool Feetech_Soft_Stop(int id);
+    bool Feetech_get_Elect(int id,int& electric);
+    bool Feetech_get_Stress(int id,int& stress);
     int Feetech_ReadPos(int id);
     int Feetech_ReadTorque_status(int id);
     void scan();

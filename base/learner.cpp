@@ -11,7 +11,6 @@ Learner::Learner(Feetech& servo) : servo_(servo)
 {
 }
 
-
 bool Learner::Low_Speed_Check(int id)
 {   
     int current = servo_.Feetech_ReadPos(id);
@@ -21,14 +20,21 @@ bool Learner::Low_Speed_Check(int id)
     int endPos = hard_max[id] - 100;
     int Safe_Move_p = 15;
     bool startReached = false; //安全扫描起点
+
     if(current < startPos)
     {
         std::cout << "起点不在安全位置中，开始移动至安全点" << std::endl;
-        bool SafeMove_Ok = servo_.Feetech_Safe_Move_Speed(id,startPos,100,20);
+        bool SafeMove_Ok = servo_.Feetech_Safe_Move_Speed(id,startPos,300,20);
             if(SafeMove_Ok)
             {
                 for(int i = 0;i < 60; i++)
             {
+                if(stopRequested)
+                {
+                    servo_.Feetech_Soft_Stop(id);
+                    return false;
+                }
+
                 current = servo_.Feetech_ReadPos(id);
                 if(current >=0 && std::abs(current - startPos) <= Safe_Move_p)
                 {
@@ -58,6 +64,12 @@ bool Learner::Low_Speed_Check(int id)
         {
             for(int i = 0;i < 60;i++)
             {
+                 if(stopRequested)
+                {
+                    servo_.Feetech_Soft_Stop(id);
+                    return false;
+                }
+
             current = servo_.Feetech_ReadPos(id);
             if(current >= 0 && std::abs(current - endPos) <= Safe_Move_p)
             {
@@ -102,13 +114,19 @@ bool Learner::Low_Speed_Check(int id)
             std::cout << "日志文件打开失败" << std::endl;
             return false;
         }
-        log << "id,target,after,direction,error,result," 
+        log << "id,target,after,direction,error,delta,stress,absStress,result," 
         << "pos1,pos2,pos3,pos4,pos5,pos6"
         << std::endl;
 
         //
         while (1)
         {
+            if(stopRequested)
+            {
+                std::cout << "程序问题，启动急停" << std::endl;
+                servo_.Feetech_Soft_Stop(id);
+                return false;
+            }
             current = servo_.Feetech_ReadPos(id);
             if(current < 0)
             {
@@ -153,42 +171,107 @@ bool Learner::Low_Speed_Check(int id)
             int error = 0;
             int error_limit = 80;
 
+            int connect_times = 0;   //通信次数
+            bool connect_error = false;  //通信错误
+            int connect_error_limit = 5; //通信错误上限
+            
             int lastPos = current; //上次位置
             int stuckCount = 0; //卡住的计数量
             int moveThreshold = 3; //变化量限制
             int stuckLimit = 8; //卡住上限次数
             bool blocked = false; //阻挡状态
             bool reached = false; //到达目标状态
+            int delta = 0;
+            //blocker  
+            int stressStuckCount = 0;
+            int stressStuckLimit = 5;
+            int absStress = 0;
+            int stressLimit = 300;
+            int stress = 0;
+            
 
             for(int i = 0; i < timeoutCount; i++)
             {
-                after = servo_.Feetech_ReadPos(id);
+                if(stopRequested)
+                {
+                    servo_.Feetech_Soft_Stop(id);
+                    std::cout << "收到停止请求，已执行软急停" << std::endl;
+                    return false;
+                }
+            after = servo_.Feetech_ReadPos(id);
                 if(after < 0)
                 {
+                    connect_times++;
+                    if(connect_times == connect_error_limit)
+                    {
+                        connect_error = true;
+                        break;
+                    }
+                    if(connect_times < connect_error_limit)
+                    {
+                        usleep(50000);
+                        continue;
+                    }
                     usleep(50000);
                     continue;
                 }
-                error = std::abs(after - target);
+                if(after >= 0)
+                {
+                    std::cout << "读取成功" << std::endl;
+                    connect_times = 0;
+                    error = std::abs(after - target);
+                }
                 if(error <= tolerance)
                 {
                     reached = true;
                     break;
                 }
 
-                int delta = std::abs(after - lastPos);
-                if(delta < moveThreshold){
+                delta = std::abs(after - lastPos);
+                lastPos = after;
+                if(delta < moveThreshold && error >tolerance)
+                {
                     stuckCount++;
-                }else{
+                }else
+                {
                     stuckCount = 0;
                 }
 
-                lastPos = after;
-                if(i > 2 && stuckCount >= stuckLimit)
+
+                bool stressOk = servo_.Feetech_get_Stress(id,stress);
+                if(stressOk)
+                {
+                    absStress = std::abs(stress);
+                }
+                else{
+                    absStress = 0;
+                }
+                if(absStress > stressLimit && delta < moveThreshold && error > error_limit)
+                {
+                    stressStuckCount++;
+                }
+                else{
+                    stressStuckCount = 0;
+                }
+               //BUG
+                if(i > 2 && (stuckCount >= stuckLimit || stressStuckCount >= stressStuckLimit))
                 {
                     blocked = true;
                     break;
                 }
                 usleep(50000);
+
+
+            }
+
+            if(connect_error == true)
+            {
+                servo_.Feetech_Soft_Stop(id);
+                std::cout << "连续通信错误，检测停止" << std::endl;
+                log << "result" << ","
+                << id << "," << target << "," << after << "," << direction << "," << error
+                << connect_error;
+                return false;
             }
             if(!reached && !blocked)
             {
@@ -212,6 +295,9 @@ bool Learner::Low_Speed_Check(int id)
                         << after << ","
                         << direction << ","
                         << error << ","
+                        << delta << ","
+                        << stress << ","
+                        << absStress << ","
                         << "blocked";
              
                 for(int servoID = 1; servoID <= 6; servoID++)
@@ -246,7 +332,6 @@ bool Learner::Low_Speed_Check(int id)
                 return false;
             }
            
-
             std::cout << "移动完成后的位置为:" << after << std::endl;
             std::cout << "误差:" << error << std::endl;
 
@@ -255,7 +340,11 @@ bool Learner::Low_Speed_Check(int id)
                 << after << ","
                 << direction << ","
                 << error << ","
+                << delta << ","
+                << stress << ","
+                << absStress << ","
                 << "ok"
+                << ",,,,,,"
                 << std::endl;
         }
     }
@@ -274,6 +363,14 @@ bool Learner::Learner_All()
     int homePos = 0;
     for(int id = 1;id < 7;id++)
     {   
+        if(stopRequested)
+        {
+            servo_.Feetech_Soft_Stop(id);
+            std::cout << "全舵机学习错误,启动急停" << std::endl;
+            resetStop();
+            return false;
+        }
+        
         bool ok = Low_Speed_Check(id);
         homePos = servo_.home_Pos[id];
         if(!ok)
@@ -282,22 +379,47 @@ bool Learner::Learner_All()
             return false;
         }
         bool homeOk = servo_.Feetech_home(id);
+        homeReached = false;
         if(!homeOk)
         {
             std::cout << "ID" << id << "回位失败！" << std::endl;
             return false;
         }
-        while (true)
+        //focus
+        //todo
+        for(int i = 0;i < 680; i++)
         {
             int PosNow = servo_.Feetech_ReadPos(id);
             if(std::abs(PosNow - servo_.home_Pos[id]) <= homeTolerance)
             {
+                homeReached = true;
                 break;
             }
+            if(stopRequested)
+            {
+                servo_.Feetech_Soft_Stop(id);
+                return false;
+            }
+            usleep(50000);
+        }
+        if(homeReached == false)
+        {
+            std::cout << "回位超时" << std::endl;
+            return false;
         }
         usleep(500000);
         std::cout << "空间检测完成" << std::endl;
     }
 
     return true;
+}
+
+void Learner::requestStop()
+{
+    stopRequested = true;
+}
+
+void Learner::resetStop()
+{
+    stopRequested = false;
 }
