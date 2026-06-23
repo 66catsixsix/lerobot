@@ -21,10 +21,12 @@ bool Learner::Low_Speed_Check(int id)
     int Safe_Move_p = 15;
     bool startReached = false; //安全扫描起点
 
+    std::cout << "打开扭矩" << std::endl;
+    servo_.Feetech_torque_on();   //打开扭矩
     if(current < startPos)
     {
         std::cout << "起点不在安全位置中，开始移动至安全点" << std::endl;
-        bool SafeMove_Ok = servo_.Feetech_Safe_Move_Speed(id,startPos,300,20);
+        bool SafeMove_Ok = servo_.Feetech_Safe_Move_Speed(id,startPos,100,20);
             if(SafeMove_Ok)
             {
                 for(int i = 0;i < 60; i++)
@@ -94,8 +96,8 @@ bool Learner::Low_Speed_Check(int id)
     if(current > hard_min[id] + 50  &&  current < hard_max[id] - 50)
     {
         int step = 50;
-        int speed = 100;
-        int acc = 20;
+        int speed = 500;
+        int acc = 60;
         int direction = 1;
         bool goBack = false;
         //

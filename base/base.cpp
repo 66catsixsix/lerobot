@@ -6,9 +6,11 @@
 #include "SMS_STS.h"
 #include "learner.hpp"
 #include <csignal>
+#include "recorder.hpp"
 
 Feetech servo;
 Learner learn(servo);
+Recorder recorder(servo);
 
 void handleSignal(int signal)
 {
@@ -31,7 +33,7 @@ int main(int argc,char* argv[]){
         std::cout << "参数错误：参数不足" << std::endl;
         return 0;
     }
-    bool ef = servo.Feetech_Begin("/dev/ttyACM0",1000000); //RK
+    bool ef = servo.Feetech_Begin("/dev/ttyACM1",1000000); //RK
     //bool ef = servo.Feetech_Begin("/dev/ttys003",115200);
     std::cout << std::boolalpha;
     if(ef)
@@ -327,8 +329,29 @@ int main(int argc,char* argv[]){
             return -1;
         }
     }
- 
-    
+
+    else if(cmd == "record" && argc == 3)
+    {
+        int seconds = std::stoi(argv[2]);
+        recorder.Way_Record(seconds);
+    }
+    else if(cmd == "replay" && argc == 4)
+    {
+        int id = 0;
+        try{
+            id = std::stoi(argv[3]);
+        }catch(...)
+        {
+            std::cout << "ID解析失败" << std::endl;
+        }
+        std::string filename = argv[2];
+        recorder.Way_Replay(filename,id);
+    }
+    else if(cmd == "replayall" && argc == 3)
+    {
+        std::string filename = argv[2];
+        recorder.Way_Replay_ALL(filename);
+    }
        
     else{
         std::cout << "参数填写错误，请重新输入" << std::endl;

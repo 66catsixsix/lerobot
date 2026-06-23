@@ -64,7 +64,7 @@
     "[x]"
   ],
   "taskvision.regex.regexCaseSensitive": false,
-  "taskvision.regex.regex": "(?<=//[ \\t]{0,40})[A-Za-z][A-Za-z0-9_]*",
+  "taskvision.regex.regex": "(?<=//[ \\t]{0,40})[A-Za-z一-龥][A-Za-z0-9_一-龥]*",
   "taskvision.highlights.useColourScheme": true,
   "taskvision.highlights.foregroundColourScheme": [
     "#F34848",

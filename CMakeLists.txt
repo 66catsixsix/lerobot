@@ -23,6 +23,7 @@ add_executable(robot_base
     base/serial.cpp
     base/feetech.cpp
     base/learner.cpp
+    base/recorder.cpp
 )
 
 target_link_libraries(robot_base PRIVATE

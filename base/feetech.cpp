@@ -60,7 +60,6 @@ bool Feetech::move(int id,int position)
 
 }
 
-
 bool Feetech :: Feetech_torque(int id,bool status)
 {
     int length = 0x04;
@@ -103,6 +102,24 @@ bool Feetech::Feetech_torque_off()
     Feetech_torque(6,0);
     usleep(300000);
     std::cout << "扭矩已经全部关闭" << std::endl;
+    return 0;
+}
+
+bool Feetech::Feetech_torque_on()
+{
+    Feetech_torque(1,1);
+    usleep(300000);
+    Feetech_torque(2,1);
+    usleep(300000);
+    Feetech_torque(3,1);
+    usleep(300000);
+    Feetech_torque(4,1);
+    usleep(300000);
+    Feetech_torque(5,1);
+    usleep(300000);
+    Feetech_torque(6,1);
+    usleep(300000);
+    std::cout << "扭矩已经全部打开" << std::endl;
     return 0;
 }
 
@@ -336,6 +353,24 @@ bool Feetech::Feetech_home(int id)
     default:
         return false;
     }
+}
+
+bool Feetech::Feetech_home_ALL()
+{
+    std::cout << "舵机开始全部回位" << std::endl;
+            Feetech_home(1);
+            usleep(300000);
+            Feetech_home(2);
+            usleep(300000);
+            Feetech_home(3);
+            usleep(300000);
+            Feetech_home(4);
+            usleep(300000);
+            Feetech_home(5);
+            usleep(300000);
+            Feetech_home(6);
+            usleep(300000);
+        std::cout << "全部舵机回位完成" << std::endl;
 }
 
 bool Feetech::Feetech_Move_Speed(int id,int position,int speed,int acc)

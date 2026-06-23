@@ -9,7 +9,9 @@ public:
     bool Feetech_Begin(const std::string &device,int baudrate);
     bool Feetech_torque(int id,bool status);
     bool Feetech_torque_off();
+    bool Feetech_torque_on();
     bool Feetech_home(int id);
+    bool Feetech_home_ALL();
     bool Feetech_Move_Speed(int id,int position,int speed,int acc);
     bool Feetech_Safe_Move_Speed(int id, int position, int speed, int acc);
     bool Feetech_Soft_Stop(int id);
